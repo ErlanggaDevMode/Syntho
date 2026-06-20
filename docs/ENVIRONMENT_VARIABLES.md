@@ -1,8 +1,22 @@
 # Environment Variables
 
+POSTGRES_DB=notes_expense
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/notes_expense
+Redis
+REDIS_URL=redis://redis:6379/0
+Telegram
 TELEGRAM_BOT_TOKEN=
-DATABASE_URL=
-REDIS_URL=
-JWT_SECRET=
+TELEGRAM_WEBHOOK_SECRET=
+AI
 OLLAMA_HOST=http://ollama:11434
-MODEL_NAME=qwen3:4b
+OLLAMA_MODEL=qwen3:4b
+AI_TIMEOUT=60
+Frontend
+VITE_API_URL=http://localhost:8000/api/v1
+Security Notes
+Jangan commit file .env
+Simpan .env.example di repository
+Rotasi secret secara berkala

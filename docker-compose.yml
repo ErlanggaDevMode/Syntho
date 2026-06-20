@@ -1,16 +1,61 @@
 services:
   postgres:
-    image: postgres:16
+    image: postgres:16-alpine
+    container_name: expense_postgres
+    restart: unless-stopped
     environment:
+      POSTGRES_DB: notes_expense
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
   redis:
-    image: redis:7
+    image: redis:7-alpine
+    container_name: expense_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
   ollama:
-    image: ollama/ollama
+    image: ollama/ollama:latest
+    container_name: expense_ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
   backend:
-    build: ./backend
-    depends_on: [postgres, redis, ollama]
-  frontend:
-    build: ./frontend
+    build:
+      context: ./backend
+    container_name: expense_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+      - ollama
+    ports:
+      - "8000:8000"
   bot:
-    build: ./bot
+    build:
+      context: ./bot
+    container_name: expense_bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - backend
+  frontend:
+    build:
+      context: ./frontend
+    container_name: expense_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+volumes:
+  postgres_data:
+  ollama_data:
