@@ -32,10 +32,9 @@ import {
   deleteTransaction, 
   fetchNotes, 
   createNote, 
-  deleteNote,
-  TransactionItem,
-  NoteItem
+  deleteNote
 } from './api';
+import type { TransactionItem, NoteItem } from './api';
 
 const queryClient = new QueryClient({
   defaultOptions: {

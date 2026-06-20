@@ -66,7 +66,7 @@ Technology:
 
 Recommended models:
 
-* Qwen3:4b
+* kwangsuklee/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-GGUF (Default)
 * Gemma3:4b
 * Phi-4 Mini
 

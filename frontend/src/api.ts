@@ -187,9 +187,9 @@ export const createNote = async (data: NoteInput): Promise<NoteItem> => {
     const newNote: NoteItem = {
       id: Math.random().toString(),
       created_at: new Date().toISOString(),
-      tags: data.tags || ['catatan'],
       summary: data.title + ' summary...',
       ...data,
+      tags: data.tags || ['catatan'],
     };
     setMockData<NoteItem[]>('mock_notes', [newNote, ...list]);
     return newNote;

@@ -12,7 +12,7 @@ TELEGRAM_BOT_TOKEN=
 TELEGRAM_WEBHOOK_SECRET=
 AI
 OLLAMA_HOST=http://ollama:11434
-OLLAMA_MODEL=qwen3:4b
+OLLAMA_MODEL=kwangsuklee/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-GGUF
 AI_TIMEOUT=60
 Frontend
 VITE_API_URL=http://localhost:8000/api/v1

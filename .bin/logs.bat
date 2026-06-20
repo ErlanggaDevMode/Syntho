@@ -1,0 +1,3 @@
+@echo off
+echo Viewing logs for Syntho...
+docker compose logs -f

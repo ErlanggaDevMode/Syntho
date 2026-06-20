@@ -63,7 +63,7 @@ Syntho automatically organizes your information, stores it securely, and generat
 | Database      | PostgreSQL          |
 | Cache         | Redis               |
 | AI Runtime    | Ollama              |
-| Default Model | Qwen 3 4B           |
+| Default Model | kwangsuklee/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-GGUF |
 | Bot Framework | python-telegram-bot |
 | Scheduling    | APScheduler         |
 | Containers    | Docker Compose      |
@@ -178,18 +178,21 @@ See `docs/ENVIRONMENT_VARIABLES.md` for the full configuration reference.
 
 ### Start the Development Environment
 
+On Linux/macOS:
 ```bash
 docker compose up -d
 ```
 
 Pull the AI model:
-
 ```bash
 make pull-model
 ```
 
-Verify that all services are running:
+On Windows (using shortcuts):
+* Double-click `.bin/up.bat` to build and start the containers.
+* Double-click `.bin/pull-model.bat` to download the AI model.
 
+Verify that all services are running:
 ```bash
 docker compose ps
 ```
@@ -198,6 +201,7 @@ docker compose ps
 
 ## Available Commands
 
+For Linux/macOS (Makefile):
 ```bash
 make up
 make down
@@ -209,6 +213,12 @@ make lint
 make format
 make pull-model
 ```
+
+For Windows (.bin/):
+* `.bin\up.bat` - Start and build services
+* `.bin\down.bat` - Stop services
+* `.bin\logs.bat` - Follow service logs
+* `.bin\pull-model.bat` - Pull the Ollama AI model
 
 ---
 

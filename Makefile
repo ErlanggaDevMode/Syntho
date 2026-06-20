@@ -35,4 +35,4 @@ format:
 	docker compose exec backend black .
 
 pull-model:
-	docker compose exec ollama ollama pull qwen3:4b
+	docker compose exec ollama ollama pull kwangsuklee/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-GGUF

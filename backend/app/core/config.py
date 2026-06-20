@@ -25,7 +25,7 @@ class Settings(BaseSettings):
 
     # AI
     OLLAMA_HOST: str = "http://ollama:11434"
-    OLLAMA_MODEL: str = "qwen3:4b"
+    OLLAMA_MODEL: str = "kwangsuklee/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-GGUF"
     AI_TIMEOUT: int = 60
 
     # Security
