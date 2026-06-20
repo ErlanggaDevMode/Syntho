@@ -18,19 +18,44 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export interface TransactionInput {
+  type: string;
+  amount: number;
+  category: string;
+  description: string;
+  payment_method: string;
+}
+
+export interface TransactionItem extends TransactionInput {
+  id: string;
+  transaction_date: string;
+}
+
+export interface NoteInput {
+  title: string;
+  content: string;
+  tags: string[];
+}
+
+export interface NoteItem extends NoteInput {
+  id: string;
+  summary: string;
+  created_at: string;
+}
+
 // Mock LocalStorage database for fallback offline states
-const getMockData = (key: string, defaultVal: any) => {
+const getMockData = <T>(key: string, defaultVal: T): T => {
   const val = localStorage.getItem(key);
   return val ? JSON.parse(val) : defaultVal;
 };
 
-const setMockData = (key: string, data: any) => {
+const setMockData = <T>(key: string, data: T) => {
   localStorage.setItem(key, JSON.stringify(data));
 };
 
 // Seed initial mock data if localStorage is empty
 if (!localStorage.getItem('mock_transactions')) {
-  setMockData('mock_transactions', [
+  setMockData<TransactionItem[]>('mock_transactions', [
     {
       id: '1',
       type: 'expense',
@@ -71,7 +96,7 @@ if (!localStorage.getItem('mock_transactions')) {
 }
 
 if (!localStorage.getItem('mock_notes')) {
-  setMockData('mock_notes', [
+  setMockData<NoteItem[]>('mock_notes', [
     {
       id: '1',
       title: 'Ide Konten Finansial',
@@ -96,8 +121,7 @@ export const fetchUserProfile = async () => {
   try {
     const res = await api.get('/auth/me');
     return res.data;
-  } catch (err) {
-    // Fallback if backend is offline
+  } catch {
     const token = localStorage.getItem('syntho_token');
     if (token) {
       return {
@@ -109,74 +133,74 @@ export const fetchUserProfile = async () => {
         created_at: new Date().toISOString(),
       };
     }
-    throw err;
+    throw new Error('Authentication failed');
   }
 };
 
 // Transactions CRUD Actions
-export const fetchTransactions = async () => {
+export const fetchTransactions = async (): Promise<TransactionItem[]> => {
   try {
     const res = await api.get('/transactions');
     return res.data;
-  } catch (err) {
-    return getMockData('mock_transactions', []);
+  } catch {
+    return getMockData<TransactionItem[]>('mock_transactions', []);
   }
 };
 
-export const createTransaction = async (data: any) => {
+export const createTransaction = async (data: TransactionInput): Promise<TransactionItem> => {
   try {
     const res = await api.post('/transactions', data);
     return res.data;
-  } catch (err) {
-    const list = getMockData('mock_transactions', []);
-    const newTx = { id: Math.random().toString(), ...data, transaction_date: new Date().toISOString() };
-    setMockData('mock_transactions', [newTx, ...list]);
+  } catch {
+    const list = getMockData<TransactionItem[]>('mock_transactions', []);
+    const newTx: TransactionItem = { id: Math.random().toString(), ...data, transaction_date: new Date().toISOString() };
+    setMockData<TransactionItem[]>('mock_transactions', [newTx, ...list]);
     return newTx;
   }
 };
 
-export const deleteTransaction = async (id: string) => {
+export const deleteTransaction = async (id: string): Promise<void> => {
   try {
     await api.delete(`/transactions/${id}`);
-  } catch (err) {
-    const list = getMockData('mock_transactions', []);
-    setMockData('mock_transactions', list.filter((t: any) => t.id !== id));
+  } catch {
+    const list = getMockData<TransactionItem[]>('mock_transactions', []);
+    setMockData<TransactionItem[]>('mock_transactions', list.filter((t) => t.id !== id));
   }
 };
 
 // Notes CRUD Actions
-export const fetchNotes = async () => {
+export const fetchNotes = async (): Promise<NoteItem[]> => {
   try {
     const res = await api.get('/notes');
     return res.data;
-  } catch (err) {
-    return getMockData('mock_notes', []);
+  } catch {
+    return getMockData<NoteItem[]>('mock_notes', []);
   }
 };
 
-export const createNote = async (data: any) => {
+export const createNote = async (data: NoteInput): Promise<NoteItem> => {
   try {
     const res = await api.post('/notes', data);
     return res.data;
-  } catch (err) {
-    const list = getMockData('mock_notes', []);
-    const newNote = {
+  } catch {
+    const list = getMockData<NoteItem[]>('mock_notes', []);
+    const newNote: NoteItem = {
       id: Math.random().toString(),
       created_at: new Date().toISOString(),
       tags: data.tags || ['catatan'],
-      summary: data.summary || data.content.slice(0, 50) + '...',
+      summary: data.title + ' summary...',
       ...data,
     };
-    setMockData('mock_notes', [newNote, ...list]);
+    setMockData<NoteItem[]>('mock_notes', [newNote, ...list]);
     return newNote;
   }
 };
 
-export const deleteNote = async (id: string) => {
+export const deleteNote = async (id: string): Promise<void> => {
   try {
     await api.delete(`/notes/${id}`);
-  } catch (err) {
-    const list = getMockData('mock_notes', []);
-    setMockData('mock_notes', list.filter((n: any) => n.id !== id));
+  } catch {
+    const list = getMockData<NoteItem[]>('mock_notes', []);
+    setMockData<NoteItem[]>('mock_notes', list.filter((n) => n.id !== id));
   }
 };

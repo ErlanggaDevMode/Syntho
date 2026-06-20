@@ -32,7 +32,9 @@ import {
   deleteTransaction, 
   fetchNotes, 
   createNote, 
-  deleteNote 
+  deleteNote,
+  TransactionItem,
+  NoteItem
 } from './api';
 
 const queryClient = new QueryClient({
@@ -44,8 +46,10 @@ const queryClient = new QueryClient({
   },
 });
 
+type TabType = 'overview' | 'transactions' | 'notes' | 'reports' | 'settings';
+
 function DashboardContent() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'notes' | 'reports' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [darkMode, setDarkMode] = useState(true);
   const [token, setToken] = useState<string | null>(localStorage.getItem('syntho_token'));
 
@@ -66,13 +70,13 @@ function DashboardContent() {
     enabled: !!token,
   });
 
-  const { data: transactions = [] } = useQuery({
+  const { data: transactions = [] } = useQuery<TransactionItem[]>({
     queryKey: ['transactions', token],
     queryFn: fetchTransactions,
     enabled: !!token,
   });
 
-  const { data: notes = [] } = useQuery({
+  const { data: notes = [] } = useQuery<NoteItem[]>({
     queryKey: ['notes', token],
     queryFn: fetchNotes,
     enabled: !!token,
@@ -123,7 +127,6 @@ function DashboardContent() {
 
   // Handle Mock Login Simulation
   const handleSimulateLogin = () => {
-    // Generate a mock JWT token and store it
     const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtb2NrLXVzZXItdXVpZCJ9.signature';
     localStorage.setItem('syntho_token', mockToken);
     setToken(mockToken);
@@ -137,17 +140,17 @@ function DashboardContent() {
 
   // Helper metrics calculation
   const totalIncome = transactions
-    .filter((t: any) => t.type === 'income')
-    .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+    .filter((t: TransactionItem) => t.type === 'income')
+    .reduce((sum: number, t: TransactionItem) => sum + Number(t.amount), 0);
 
   const totalExpense = transactions
-    .filter((t: any) => t.type === 'expense')
-    .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+    .filter((t: TransactionItem) => t.type === 'expense')
+    .reduce((sum: number, t: TransactionItem) => sum + Number(t.amount), 0);
 
   const netBalance = totalIncome - totalExpense;
 
   // Filtered lists
-  const filteredTxs = transactions.filter((t: any) => {
+  const filteredTxs = transactions.filter((t: TransactionItem) => {
     const matchesSearch = t.description?.toLowerCase().includes(txSearch.toLowerCase()) || 
                           t.category?.toLowerCase().includes(txSearch.toLowerCase());
     const matchesType = txTypeFilter === 'all' || t.type === txTypeFilter;
@@ -158,7 +161,7 @@ function DashboardContent() {
   const paginatedTxs = filteredTxs.slice((txPage - 1) * txPerPage, txPage * txPerPage);
   const totalTxPages = Math.ceil(filteredTxs.length / txPerPage) || 1;
 
-  const filteredNotes = notes.filter((n: any) => {
+  const filteredNotes = notes.filter((n: NoteItem) => {
     return n.title?.toLowerCase().includes(noteSearch.toLowerCase()) || 
            n.content?.toLowerCase().includes(noteSearch.toLowerCase()) ||
            n.tags?.some((tag: string) => tag.toLowerCase().includes(noteSearch.toLowerCase()));
@@ -167,7 +170,7 @@ function DashboardContent() {
   // Export report handler
   const handleExportCSV = () => {
     const headers = 'ID,Tanggal,Tipe,Nominal,Kategori,Deskripsi,Metode Pembayaran\n';
-    const rows = transactions.map((t: any) => 
+    const rows = transactions.map((t: TransactionItem) => 
       `"${t.id}","${t.transaction_date}","${t.type}",${t.amount},"${t.category}","${t.description}","${t.payment_method}"`
     ).join('\n');
     const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
@@ -184,7 +187,6 @@ function DashboardContent() {
   if (!token) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
-        {/* Futuristic glowing backdrops */}
         <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-purple-900/10 blur-[120px] pointer-events-none" />
         <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-blue-900/10 blur-[120px] pointer-events-none" />
 
@@ -235,7 +237,6 @@ function DashboardContent() {
 
   return (
     <div className={`min-h-screen flex ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'} transition-all duration-300 font-sans`}>
-      {/* Sidebar navigation */}
       <aside className={`w-64 border-r ${darkMode ? 'bg-slate-900/60 border-slate-800/80' : 'bg-white border-slate-200'} flex flex-col justify-between p-6 z-10 backdrop-blur-lg`}>
         <div className="space-y-8">
           <div className="flex items-center gap-3">
@@ -261,7 +262,7 @@ function DashboardContent() {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id as any)}
+                  onClick={() => setActiveTab(item.id as TabType)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
                     isActive 
                       ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' 
@@ -306,12 +307,9 @@ function DashboardContent() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 p-10 overflow-y-auto max-w-7xl mx-auto w-full relative">
-        {/* Glow dots */}
         <div className="absolute top-0 right-1/4 w-[400px] h-[400px] rounded-full bg-purple-500/5 blur-[100px] pointer-events-none" />
 
-        {/* Tab components display */}
         {activeTab === 'overview' && (
           <div className="space-y-8 animate-fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -337,7 +335,6 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* Financial metric summaries */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900/40 border-slate-800/80' : 'bg-white border-slate-200 shadow-sm'}`}>
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Saldo Bersih</p>
@@ -362,9 +359,7 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* Recent Items Lists */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Recent Transactions list */}
               <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900/40 border-slate-800/80' : 'bg-white border-slate-200 shadow-sm'} space-y-4`}>
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-lg">Transaksi Terbaru</h3>
@@ -374,7 +369,7 @@ function DashboardContent() {
                   <p className="text-sm text-slate-500 py-6 text-center">Belum ada transaksi terekam.</p>
                 ) : (
                   <div className="divide-y divide-slate-800/60 space-y-3">
-                    {transactions.slice(0, 4).map((t: any) => (
+                    {transactions.slice(0, 4).map((t: TransactionItem) => (
                       <div key={t.id} className="flex items-center justify-between pt-3 first:pt-0">
                         <div className="min-w-0">
                           <p className="text-sm font-bold truncate">{t.description || 'Tanpa deskripsi'}</p>
@@ -394,7 +389,6 @@ function DashboardContent() {
                 )}
               </div>
 
-              {/* Recent Notes grid */}
               <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900/40 border-slate-800/80' : 'bg-white border-slate-200 shadow-sm'} space-y-4`}>
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-lg">Catatan Terbaru</h3>
@@ -404,7 +398,7 @@ function DashboardContent() {
                   <p className="text-sm text-slate-500 py-6 text-center">Belum ada catatan disimpan.</p>
                 ) : (
                   <div className="grid grid-cols-1 gap-4">
-                    {notes.slice(0, 2).map((n: any) => (
+                    {notes.slice(0, 2).map((n: NoteItem) => (
                       <div key={n.id} className={`p-4 rounded-xl border ${darkMode ? 'bg-slate-950/60 border-slate-800/60' : 'bg-slate-50 border-slate-200'} space-y-2`}>
                         <h4 className="font-bold text-sm text-purple-400">{n.title}</h4>
                         <p className="text-xs text-slate-400 line-clamp-2">{n.content}</p>
@@ -425,7 +419,6 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* Transactions Tab components view */}
         {activeTab === 'transactions' && (
           <div className="space-y-8 animate-fade-in">
             <div className="flex items-center justify-between">
@@ -442,7 +435,6 @@ function DashboardContent() {
               </button>
             </div>
 
-            {/* Filters panel */}
             <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900/40 border-slate-800/80' : 'bg-white border-slate-200'} flex flex-col md:flex-row md:items-center justify-between gap-4`}>
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
@@ -464,7 +456,7 @@ function DashboardContent() {
                     value={txTypeFilter}
                     onChange={(e) => { setTxTypeFilter(e.target.value); setTxPage(1); }}
                     className={`px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 ${
-                      darkMode ? 'bg-slate-950/60 border-slate-850 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                      darkMode ? 'bg-slate-955/60 border-slate-850 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}
                   >
                     <option value="all">Semua Tipe</option>
@@ -477,18 +469,17 @@ function DashboardContent() {
                   value={txCategoryFilter}
                   onChange={(e) => { setTxCategoryFilter(e.target.value); setTxPage(1); }}
                   className={`px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 ${
-                    darkMode ? 'bg-slate-950/60 border-slate-850 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    darkMode ? 'bg-slate-955/60 border-slate-850 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                   }`}
                 >
                   <option value="all">Semua Kategori</option>
-                  {Array.from(new Set(transactions.map((t: any) => t.category))).filter(Boolean).map((cat: any) => (
-                    <option key={String(cat)} value={String(cat)}>{String(cat)}</option>
+                  {Array.from(new Set(transactions.map((t: TransactionItem) => t.category))).filter(Boolean).map((cat: string) => (
+                    <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
               </div>
             </div>
 
-            {/* Table display */}
             <div className={`border rounded-2xl overflow-hidden ${darkMode ? 'bg-slate-900/20 border-slate-800/80' : 'bg-white border-slate-200 shadow-sm'}`}>
               <table className="min-w-full divide-y divide-slate-800/60">
                 <thead className={darkMode ? 'bg-slate-900/60' : 'bg-slate-50'}>
@@ -509,7 +500,7 @@ function DashboardContent() {
                       </td>
                     </tr>
                   ) : (
-                    paginatedTxs.map((t: any) => (
+                    paginatedTxs.map((t: TransactionItem) => (
                       <tr key={t.id} className={darkMode ? 'hover:bg-slate-900/40' : 'hover:bg-slate-50'}>
                         <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-400">
                           {new Date(t.transaction_date).toLocaleDateString('id-ID', { dateStyle: 'medium' })}
@@ -535,7 +526,6 @@ function DashboardContent() {
                 </tbody>
               </table>
 
-              {/* Pagination controls */}
               <div className={`px-6 py-4 border-t ${darkMode ? 'border-slate-800/80 bg-slate-900/30' : 'border-slate-200 bg-slate-50'} flex items-center justify-between`}>
                 <span className="text-xs text-slate-500">
                   Menampilkan {paginatedTxs.length} dari {filteredTxs.length} transaksi
@@ -564,7 +554,6 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* Notes Tab components view */}
         {activeTab === 'notes' && (
           <div className="space-y-8 animate-fade-in">
             <div className="flex items-center justify-between">
@@ -581,7 +570,6 @@ function DashboardContent() {
               </button>
             </div>
 
-            {/* Search note bar */}
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
               <input
@@ -595,12 +583,11 @@ function DashboardContent() {
               />
             </div>
 
-            {/* Notes grid list */}
             {filteredNotes.length === 0 ? (
               <p className="text-sm text-slate-500 py-10 text-center">Tidak ada catatan ditemukan.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredNotes.map((n: any) => (
+                {filteredNotes.map((n: NoteItem) => (
                   <div 
                     key={n.id} 
                     className={`p-6 rounded-2xl border ${
@@ -642,7 +629,6 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* Reports Tab components view */}
         {activeTab === 'reports' && (
           <div className="space-y-8 animate-fade-in">
             <div className="flex items-center justify-between">
@@ -659,12 +645,10 @@ function DashboardContent() {
               </button>
             </div>
 
-            {/* Custom SVG metrics overview visualizer */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900/40 border-slate-800/80' : 'bg-white border-slate-200'}`}>
                 <h3 className="font-bold text-lg mb-6">Distribusi Pengeluaran Kategori</h3>
                 <div className="flex flex-col items-center justify-center p-6 space-y-6">
-                  {/* SVG Pie Chart simulation */}
                   <svg className="w-48 h-48 transform -rotate-90" viewBox="0 0 32 32">
                     <circle r="16" cx="16" cy="16" fill="transparent" stroke="#1f2937" strokeWidth="32" />
                     <circle r="16" cx="16" cy="16" fill="transparent" stroke="#a855f7" strokeWidth="32" strokeDasharray="60 100" />
@@ -688,7 +672,6 @@ function DashboardContent() {
                 </div>
               </div>
 
-              {/* Recommendations and AI Insights */}
               <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900/40 border-slate-800/80' : 'bg-white border-slate-200'} space-y-4`}>
                 <h3 className="font-bold text-lg">AI Financial Insights</h3>
                 <div className="bg-purple-500/5 p-4 rounded-xl border border-purple-500/10 space-y-3">
@@ -706,7 +689,6 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* Settings Tab components view */}
         {activeTab === 'settings' && (
           <div className="space-y-8 animate-fade-in">
             <div>
@@ -774,7 +756,6 @@ function DashboardContent() {
         )}
       </main>
 
-      {/* Transaction Modal dialog */}
       {showTxModal && (
         <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className={`w-full max-w-md p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-2xl space-y-6`}>
@@ -875,7 +856,6 @@ function DashboardContent() {
         </div>
       )}
 
-      {/* Note Modal dialog */}
       {showNoteModal && (
         <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className={`w-full max-w-md p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-2xl space-y-6`}>
@@ -929,7 +909,7 @@ function DashboardContent() {
                   value={noteForm.tagsString}
                   onChange={(e) => setNoteForm({ ...noteForm, tagsString: e.target.value })}
                   className={`w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 ${
-                    darkMode ? 'bg-slate-950/60 border-slate-850 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    darkMode ? 'bg-slate-955/60 border-slate-850 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                   }`}
                 />
               </div>

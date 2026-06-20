@@ -10,6 +10,9 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -17,30 +20,31 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          pip install -r backend/requirements.txt 
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
       - name: Lint
         run: |
-          ruff check backend
+          ruff check .
       - name: Format check
         run: |
-          black --check backend
-      - name: Run tests
+          black --check .
+      - name: Run tests with coverage check
         run: |
-          pytest backend/tests
+          python -m pytest --cov=app --cov-report=term-missing --cov-fail-under=80
 
   frontend:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
       - name: Install dependencies
-        working-directory: frontend
         run: npm ci
       - name: Lint
-        working-directory: frontend
         run: npm run lint
       - name: Test
-        working-directory: frontend
         run: npm run test

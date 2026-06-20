@@ -16,11 +16,19 @@ setup_logging()
 logger = logging.getLogger("syntho-backend")
 
 
+from app.core.scheduler import start_scheduler, shutdown_scheduler
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting up Syntho Backend...")
+    import sys
+    if "pytest" not in sys.modules:
+        start_scheduler()
     yield
     logger.info("Shutting down Syntho Backend...")
+    if "pytest" not in sys.modules:
+        shutdown_scheduler()
 
 
 app = FastAPI(
