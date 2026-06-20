@@ -1,12 +1,11 @@
-import logging
 from typing import Annotated
-from fastapi import APIRouter, Depends, Header, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.repositories.user import UserRepository
 from app.schemas.bot import BotMessageInput, BotMessageResponse
+from fastapi import APIRouter, Depends, Header, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/bot", tags=["bot"])
 
@@ -78,7 +77,7 @@ async def handle_bot_message(
         )
     else:
         response_text = (
-            f"Pesan diterima: \"{text}\"\n\n"
+            f'Pesan diterima: "{text}"\n\n'
             "Pesan akan dianalisis oleh AI di langkah selanjutnya."
         )
 
