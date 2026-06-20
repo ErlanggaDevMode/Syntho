@@ -1,0 +1,8 @@
+# Environment Variables
+
+TELEGRAM_BOT_TOKEN=
+DATABASE_URL=
+REDIS_URL=
+JWT_SECRET=
+OLLAMA_HOST=http://ollama:11434
+MODEL_NAME=qwen3:4b

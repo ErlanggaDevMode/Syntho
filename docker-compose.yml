@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+  redis:
+    image: redis:7
+  ollama:
+    image: ollama/ollama
+  backend:
+    build: ./backend
+    depends_on: [postgres, redis, ollama]
+  frontend:
+    build: ./frontend
+  bot:
+    build: ./bot

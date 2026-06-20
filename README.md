@@ -1,2 +1,3 @@
-# Syntho
-This Is Habit Tracker, Finance Tracker, Note Taker, all In one, and this is interegrated with Telegram
+# AI Notes & Expense Tracker
+
+Self-hosted AI-powered notes and expense tracking system integrated with Telegram.
