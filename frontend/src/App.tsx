@@ -23,7 +23,11 @@ import {
   Key, 
   CheckCircle,
   Clock,
-  Tag
+  Tag,
+  MessageSquare,
+  Send,
+  X,
+  Bot
 } from 'lucide-react';
 import { 
   fetchUserProfile, 
@@ -32,7 +36,8 @@ import {
   deleteTransaction, 
   fetchNotes, 
   createNote, 
-  deleteNote
+  deleteNote,
+  sendWebChatMessage
 } from './api';
 import type { TransactionItem, NoteItem } from './api';
 
@@ -55,6 +60,49 @@ function DashboardContent() {
   // Modals state
   const [showTxModal, setShowTxModal] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
+
+  // Chatbot state
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState<Array<{ sender: 'user' | 'bot'; text: string; time: string }>>([
+    { sender: 'bot', text: 'Halo! Saya asisten AI Syntho. Ada yang bisa saya bantu hari ini?', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+  ]);
+  const [chatLoading, setChatLoading] = useState(false);
+
+  const handleSendChatMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim() || chatLoading) return;
+
+    const userMsg = chatInput.trim();
+    setChatInput('');
+    
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setChatMessages(prev => [...prev, { sender: 'user', text: userMsg, time: timeStr }]);
+    setChatLoading(true);
+
+    try {
+      const res = await sendWebChatMessage(userMsg);
+      setChatMessages(prev => [
+        ...prev, 
+        { 
+          sender: 'bot', 
+          text: res.response_text, 
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+        }
+      ]);
+    } catch {
+      setChatMessages(prev => [
+        ...prev, 
+        { 
+          sender: 'bot', 
+          text: 'Maaf, terjadi gangguan saat memproses pesan Anda.', 
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+        }
+      ]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   // Form states
   const [txForm, setTxForm] = useState({ type: 'expense', amount: '', category: 'Makanan', description: '', payment_method: 'QRIS' });
@@ -923,6 +971,118 @@ function DashboardContent() {
           </div>
         </div>
       )}
+
+      {/* Floating Chatbot Widget */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+        {chatOpen && (
+          <div 
+            className={`w-96 h-[500px] rounded-2xl border shadow-2xl flex flex-col overflow-hidden mb-4 transition-all duration-300 ease-out transform scale-100 origin-bottom-right ${
+              darkMode 
+                ? 'bg-slate-900/90 border-slate-800 text-white backdrop-blur-md' 
+                : 'bg-white/95 border-slate-200 text-slate-900 backdrop-blur-md'
+            }`}
+          >
+            {/* Header */}
+            <div className="p-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-indigo-700 text-white flex items-center justify-between shadow-md">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
+                  <Bot size={20} className="text-white animate-pulse" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm leading-tight">Syntho Assistant</h4>
+                  <div className="flex items-center space-x-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span className="text-[10px] text-purple-200">Online | AI Agent</span>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={() => setChatOpen(false)} 
+                className="text-white/80 hover:text-white hover:bg-white/10 p-1.5 rounded-lg transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Message Area */}
+            <div className="flex-1 p-4 overflow-y-auto space-y-3 flex flex-col min-h-0 scrollbar-thin">
+              {chatMessages.map((msg, index) => (
+                <div 
+                  key={index} 
+                  className={`flex flex-col max-w-[80%] ${
+                    msg.sender === 'user' ? 'self-end items-end' : 'self-start items-start'
+                  }`}
+                >
+                  <div 
+                    className={`px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed ${
+                      msg.sender === 'user' 
+                        ? 'bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-tr-none shadow-md' 
+                        : darkMode
+                          ? 'bg-slate-800 text-slate-100 rounded-tl-none border border-slate-700/50 shadow-sm'
+                          : 'bg-slate-100 text-slate-800 rounded-tl-none border border-slate-200 shadow-sm'
+                    }`}
+                    style={{ whiteSpace: 'pre-wrap' }}
+                  >
+                    {msg.text}
+                  </div>
+                  <span className="text-[9px] text-slate-500 mt-1 px-1">{msg.time}</span>
+                </div>
+              ))}
+
+              {chatLoading && (
+                <div className="self-start flex items-center space-x-2 bg-slate-800/50 px-3.5 py-2.5 rounded-2xl rounded-tl-none border border-slate-700/30">
+                  <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                  <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                  <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                </div>
+              )}
+            </div>
+
+            {/* Input Form */}
+            <form 
+              onSubmit={handleSendChatMessage}
+              className={`p-3 border-t flex items-center space-x-2 ${
+                darkMode ? 'border-slate-800/80 bg-slate-900/50' : 'border-slate-200 bg-slate-50/50'
+              }`}
+            >
+              <input
+                type="text"
+                placeholder="Tulis pesan Anda..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                className={`flex-1 px-3.5 py-2 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all ${
+                  darkMode 
+                    ? 'bg-slate-950/85 border-slate-800 text-white placeholder-slate-500 focus:border-purple-500/50' 
+                    : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-purple-500/50'
+                }`}
+              />
+              <button
+                type="submit"
+                disabled={!chatInput.trim() || chatLoading}
+                className={`p-2 rounded-xl text-white transition-all shadow-md cursor-pointer ${
+                  chatInput.trim() && !chatLoading
+                    ? 'bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 active:scale-95'
+                    : 'bg-slate-700 text-slate-500 cursor-not-allowed opacity-50'
+                }`}
+              >
+                <Send size={16} />
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Toggle Button */}
+        <button
+          onClick={() => setChatOpen(!chatOpen)}
+          className={`w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 hover:rotate-12 ${
+            chatOpen
+              ? 'bg-gradient-to-br from-rose-500 to-red-600 shadow-rose-500/25'
+              : 'bg-gradient-to-br from-purple-600 via-indigo-600 to-indigo-700 shadow-purple-500/25 hover:shadow-purple-500/40'
+          }`}
+        >
+          {chatOpen ? <X size={24} /> : <MessageSquare size={24} />}
+        </button>
+      </div>
     </div>
   );
 }

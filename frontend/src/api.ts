@@ -204,3 +204,15 @@ export const deleteNote = async (id: string): Promise<void> => {
     setMockData<NoteItem[]>('mock_notes', list.filter((n) => n.id !== id));
   }
 };
+
+export const sendWebChatMessage = async (text: string): Promise<{ response_text: string }> => {
+  try {
+    const res = await api.post('/bot/chat', { text });
+    return res.data;
+  } catch {
+    // Offline simulation/fallback
+    return {
+      response_text: `[Offline Mode] Anda mengirim: "${text}". Hubungkan backend dengan Ollama untuk analisis AI sesungguhnya.`
+    };
+  }
+};

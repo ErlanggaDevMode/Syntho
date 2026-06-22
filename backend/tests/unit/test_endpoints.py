@@ -204,6 +204,46 @@ async def test_bot_message_static_commands():
             assert response.status_code == 200
             assert "Panduan Penggunaan" in response.json()["response_text"]
 
+            # 3. /notes command
+            payload["text"] = "/notes"
+            with patch(
+                "app.repositories.note.NoteRepository.get_all_by_user_id",
+                new_callable=AsyncMock,
+            ) as mock_get_notes:
+                mock_note = MagicMock()
+                mock_note.title = "Test Note"
+                mock_note.content = "Content"
+                mock_note.tags = ["test"]
+                mock_note.summary = "Summary"
+                mock_get_notes.return_value = [mock_note]
+
+                response = await ac.post(
+                    "/api/v1/bot/message", json=payload, headers=headers
+                )
+                assert response.status_code == 200
+                assert "Catatan Terakhir Anda" in response.json()["response_text"]
+
+            # 4. /transactions command
+            payload["text"] = "/transactions"
+            with patch(
+                "app.repositories.transaction.TransactionRepository.get_all_by_user_id",
+                new_callable=AsyncMock,
+            ) as mock_get_txs:
+                mock_tx = MagicMock()
+                mock_tx.type = "expense"
+                mock_tx.amount = 10000
+                mock_tx.description = "kopi"
+                mock_tx.category = "Makanan"
+                mock_tx.transaction_date = datetime.now()
+                mock_get_txs.return_value = [mock_tx]
+
+                response = await ac.post(
+                    "/api/v1/bot/message", json=payload, headers=headers
+                )
+                assert response.status_code == 200
+                assert "Transaksi Terakhir Anda" in response.json()["response_text"]
+
+
 
 @pytest.mark.asyncio
 async def test_bot_message_ai_intents():
@@ -387,3 +427,109 @@ async def test_scheduler_daily_report():
 
         mock_send.assert_called_once()
         assert "AI Insight" in mock_send.call_args[0][1]
+
+
+@pytest.mark.asyncio
+async def test_bot_chat_endpoint():
+    user_id = uuid.uuid4()
+    mock_user = MagicMock()
+    mock_user.id = user_id
+    mock_user.full_name = "Test Chat User"
+
+    # Create auth token for user_id
+    from app.core.security import create_access_token
+    token = create_access_token({"sub": str(user_id)})
+    headers = {"Authorization": f"Bearer {token}"}
+    payload = {
+        "text": "Beli kopi 20rb"
+    }
+
+    with patch(
+        "app.api.deps.UserRepository.get_by_id", new_callable=AsyncMock
+    ) as mock_get_user, patch(
+        "app.repositories.transaction.TransactionRepository.create",
+        new_callable=AsyncMock,
+    ) as mock_tx_create, patch(
+        "app.repositories.note.NoteRepository.create", new_callable=AsyncMock
+    ) as mock_note_create, patch(
+        "app.repositories.reminder.ReminderRepository.create",
+        new_callable=AsyncMock,
+    ) as mock_reminder_create, patch(
+        "app.repositories.transaction.TransactionRepository.get_all_by_user_id",
+        new_callable=AsyncMock,
+    ) as mock_tx_get_all, patch(
+        "app.repositories.note.NoteRepository.get_all_by_user_id",
+        new_callable=AsyncMock,
+    ) as mock_note_get_all, patch(
+        "app.agents.agents.RouterAgent.run", new_callable=AsyncMock
+    ) as mock_router, patch(
+        "app.agents.agents.ExpenseAgent.run", new_callable=AsyncMock
+    ) as mock_expense, patch(
+        "app.agents.agents.NoteAgent.run", new_callable=AsyncMock
+    ) as mock_note, patch(
+        "app.agents.agents.ReminderAgent.run", new_callable=AsyncMock
+    ) as mock_reminder, patch(
+        "app.agents.agents.ReportAgent.run", new_callable=AsyncMock
+    ) as mock_report, patch(
+        "app.agents.agents.FallbackAgent.run", new_callable=AsyncMock
+    ) as mock_fallback:
+
+        mock_get_user.return_value = mock_user
+
+        # 1. Expense intent
+        mock_router.return_value = RouterOutput(intent="expense")
+        mock_expense.return_value = ExpenseOutput(
+            intent="expense",
+            amount=20000.0,
+            category="Makanan",
+            description="Beli kopi",
+            payment_method="Tunai",
+            transaction_date=None,
+        )
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as ac:
+            response = await ac.post(
+                "/api/v1/bot/chat", json=payload, headers=headers
+            )
+            assert response.status_code == 200
+            assert "Transaksi Berhasil Dicatat" in response.json()["response_text"]
+            mock_tx_create.assert_called_once()
+
+            # 2. Static /help command
+            payload["text"] = "/help"
+            response = await ac.post(
+                "/api/v1/bot/chat", json=payload, headers=headers
+            )
+            assert response.status_code == 200
+            assert "Panduan Penggunaan" in response.json()["response_text"]
+
+            # 3. Static /notes command
+            payload["text"] = "/notes"
+            mock_note_item = MagicMock()
+            mock_note_item.title = "Chat Note"
+            mock_note_item.content = "Chat Content"
+            mock_note_item.tags = ["chat"]
+            mock_note_item.summary = "Chat Summary"
+            mock_note_get_all.return_value = [mock_note_item]
+            response = await ac.post(
+                "/api/v1/bot/chat", json=payload, headers=headers
+            )
+            assert response.status_code == 200
+            assert "Catatan Terakhir Anda" in response.json()["response_text"]
+
+            # 4. Static /transactions command
+            payload["text"] = "/transactions"
+            mock_tx_item = MagicMock()
+            mock_tx_item.type = "expense"
+            mock_tx_item.amount = 12000.0
+            mock_tx_item.description = "siomay"
+            mock_tx_item.category = "Makanan"
+            mock_tx_item.transaction_date = datetime.now()
+            mock_tx_get_all.return_value = [mock_tx_item]
+            response = await ac.post(
+                "/api/v1/bot/chat", json=payload, headers=headers
+            )
+            assert response.status_code == 200
+            assert "Transaksi Terakhir Anda" in response.json()["response_text"]
+

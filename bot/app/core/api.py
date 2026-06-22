@@ -27,7 +27,7 @@ async def send_message_to_backend(
     url = f"{settings.BACKEND_API_URL}/bot/message"
 
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(url, json=payload, headers=headers)
             if response.status_code == 200:
                 return response.json().get(
@@ -45,7 +45,7 @@ async def send_message_to_backend(
             alt_url = url.replace("backend:8000", "localhost:8000")
             logger.info(f"Retrying connection using alternate URL: {alt_url}")
             try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
+                async with httpx.AsyncClient(timeout=120.0) as client:
                     response = await client.post(alt_url, json=payload, headers=headers)
                     if response.status_code == 200:
                         return response.json().get("response_text")

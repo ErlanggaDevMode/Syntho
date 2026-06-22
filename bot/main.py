@@ -3,6 +3,7 @@ import sys
 
 from app.core.config import settings
 from app.handlers.handlers import handle_message
+from telegram import BotCommand
 from telegram.ext import Application, MessageHandler, filters
 
 # Setup logging to stdout
@@ -14,12 +15,33 @@ logging.basicConfig(
 logger = logging.getLogger("syntho-bot")
 
 
+async def post_init(application: Application) -> None:
+    """Register custom bot commands menu in Telegram UI."""
+    commands = [
+        BotCommand("start", "Mulai Asisten Syntho"),
+        BotCommand("help", "Panduan Penggunaan"),
+        BotCommand("report", "Minta Laporan Analisis AI"),
+        BotCommand("transactions", "Lihat Transaksi Terakhir"),
+        BotCommand("notes", "Lihat Catatan Terakhir"),
+    ]
+    try:
+        await application.bot.set_my_commands(commands)
+        logger.info("Bot commands menu registered successfully.")
+    except Exception as e:
+        logger.error(f"Failed to register bot commands menu: {e}")
+
+
 def main() -> None:
     """Start the bot."""
     logger.info("Initializing Telegram Bot...")
 
-    # Build python-telegram-bot application
-    application = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
+    # Build python-telegram-bot application with post_init hook
+    application = (
+        Application.builder()
+        .token(settings.TELEGRAM_BOT_TOKEN)
+        .post_init(post_init)
+        .build()
+    )
 
     # Relay all text and command messages to a single unified handler
     application.add_handler(
